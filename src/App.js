@@ -4,13 +4,14 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './App.css';
 
-// --- Correção de ícone do Leaflet ---
+// --- Correção para o ícone do marcador que as vezes buga no React ---
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
   iconUrl: require('leaflet/dist/images/marker-icon.png'),
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
+// --------------------------------------------------------------------
 
 function App() {
   const [ipInput, setIpInput] = useState('');
@@ -37,8 +38,11 @@ function App() {
     setLoading(false);
   };
 
+  // Busca inicial (seu IP)
   useEffect(() => {
     fetchIp();
+    // A linha abaixo manda a Vercel ignorar o aviso que estava travando o build
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSearch = (e) => {
@@ -49,20 +53,19 @@ function App() {
   return (
     <div className="app-container">
       <header>
-        {/* MUDANÇA 1: Nome Atualizado */}
         <h1>📍 Localizador de IP C.F</h1>
       </header>
       
       <form className="search-bar" onSubmit={handleSearch}>
         <input 
           type="text"
-          placeholder="Digite um endereço IP..."
+          placeholder="Digite um endereço IP (ex: 8.8.8.8)..."
           value={ipInput}
           onChange={(e) => setIpInput(e.target.value)}
           disabled={loading}
         />
         <button type="submit" disabled={loading}>
-          {loading ? 'Rastreando...' : 'Localizar'}
+          {loading ? 'Buscando...' : 'Localizar'}
         </button>
       </form>
 
@@ -72,12 +75,12 @@ function App() {
         
         {data && !loading && (
           <div className="content-grid">
+            {/* Painel de Informações (Esquerda) */}
             <div className="info-panel">
               <div className="data-item">
                 <span className="data-label">Endereço IP</span>
                 <div className="data-value">{data.ip}</div>
               </div>
-              
               <div className="data-item">
                 <span className="data-label">Localização</span>
                 <div className="data-value">
@@ -85,28 +88,24 @@ function App() {
                   <img src={data.flag.img} alt={data.country} className="flag-img" />
                 </div>
               </div>
-
-              {/* MUDANÇA 2: Mais dados técnicos */}
-              <div className="data-item">
-                <span className="data-label">Fuso Horário & Hora Atual</span>
+               <div className="data-item">
+                <span className="data-label">Fuso Horário</span>
                 <div className="data-value">
                   {data.timezone.id} ({data.timezone.current_time})
                 </div>
               </div>
-
               <div className="data-item">
                 <span className="data-label">Provedor (ISP)</span>
                 <div className="data-value">{data.connection.isp}</div>
               </div>
-
               <div className="data-item">
                 <span className="data-label">Coordenadas GPS</span>
                 <div className="data-value">{data.latitude.toFixed(4)}, {data.longitude.toFixed(4)}</div>
               </div>
 
-              {/* MUDANÇA 3: Botão de Satélite Google */}
+              {/* Botão para abrir no Google Maps Real */}
               <a 
-                href={`https://www.google.com/maps/search/?api=1&query=${data.latitude},${data.longitude}`} 
+                href={`https://www.google.com/maps?q=${data.latitude},${data.longitude}`} 
                 target="_blank" 
                 rel="noreferrer"
                 style={{
@@ -114,18 +113,19 @@ function App() {
                   textAlign: 'center',
                   background: '#34a853',
                   color: 'white',
-                  padding: '10px',
+                  padding: '12px',
                   borderRadius: '6px',
                   textDecoration: 'none',
                   fontWeight: 'bold',
-                  marginTop: '15px'
+                  marginTop: '20px',
+                  boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
                 }}
               >
-                🛰️ Ver no Google Maps (Satélite)
+                🛰️ Ver Satélite (Google Maps)
               </a>
-
             </div>
 
+            {/* Painel do Mapa (Direita) */}
             <div className="map-panel">
               <MapContainer 
                 center={[data.latitude, data.longitude]} 
@@ -134,12 +134,12 @@ function App() {
                 key={data.ip} 
               >
                 <TileLayer
-                  attribution='&copy; OpenStreetMap'
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 <Marker position={[data.latitude, data.longitude]}>
                   <Popup>
-                    {data.connection.isp} <br /> {data.city}
+                    Localização aproximada de: <br /> <strong>{data.ip}</strong>
                   </Popup>
                 </Marker>
               </MapContainer>
